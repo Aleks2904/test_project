@@ -4,8 +4,7 @@ export const state = () => ({
 
 export const mutations = {
   setTree(state, value){
-    console.log(value)
-    state.tree = value
+    state.tree = value;
   },
 }
 

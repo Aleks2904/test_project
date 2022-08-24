@@ -14,7 +14,7 @@ export const getters = {
 
 export const actions = {
   async requestTree({ commit, state }){
-    await this.$axios('./test.json').then((response)=>{
+    await this.$axios('./tree.json').then((response)=>{
       commit('setTree', response.data);
     });
   },

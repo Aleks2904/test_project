@@ -1,10 +1,10 @@
 <template lang="pug">
   .tree
     ul
-      template(v-for="(item, name, i) in obg")
-        TreeItem(v-if="name !== '#_id'" :item="item" :name="name" :key="name" :id="obg['#_id']" :action="actionFN")
+      template(v-for="(item, name, i) in treeObject")
+        TreeItem(v-if="name !== '#_id'" :item="item" :name="name" :key="name" :id="treeObject['#_id']" :action="actionsController")
     transition(name="form" )
-      form.tree__form(@submit="changeObject" v-if="showRenameForm")
+      form.tree__form(@submit="changeTree" v-if="showRenameForm")
         button(type="button" aria-label="close rename" @click="()=>{this.showRenameForm = false}")
         input(ref="input" placeholder="Rename" v-model="rename" )
 </template>
@@ -13,16 +13,16 @@
 
 import { mapGetters, mapActions, mapMutations } from 'vuex';
 import TreeItem from "~/components/Tree/TreeItem";
+
 export default {
   name: 'RenderTree',
   components: {TreeItem},
   data:()=>{
     return{
       rename: '',
-      renameID: '',
       beforeName: '',
       showRenameForm: false,
-      obg: {},
+      treeObject: {},
       action: 'rename',
       isFile: false,
     }
@@ -31,69 +31,43 @@ export default {
     ...mapActions('tree', ['requestTree']),
     ...mapMutations('tree', ['setTree']),
 
-    changeObject(e){
+    changeTree(e){
       if(this.action === 'rename'){
         e.preventDefault();
         if(!this.rename) return;
       }
 
-      const newObject = {};
-      Object.assign(newObject, this.obg);
+      const newTreeObject = {};
+      Object.assign(newTreeObject, this.treeObject);
 
-      if(newObject['#_id'] === this.renameID){
-        if(!this.isFile && this.action === 'rename'){
-          delete Object.assign( newObject, {[this.rename]: newObject[this.beforeName] })[this.beforeName];
-        };
+      const changeObj = (obj) => {
+        for(let key in obj){
+          const newObj = typeof obj[key] === 'object' ? obj[key] : null;
 
-        if(!this.isFile && this.action === 'remove'){
-          delete Object.assign( newObject)[this.beforeName];
-        };
-
-        if(this.isFile){
-          for(let key in newObject){
-            if(newObject[key] === this.beforeName){
-              if(this.action === 'rename'){
-                newObject[key] = this.rename;
-              };
-              if(this.action === 'remove'){
-                delete Object.assign(newObject)[key];
-              };
+          if(key === this.beforeName){
+            const newKey = this.generationKey(this.rename);
+            if(this.action === 'rename'){
+              if(this.isFile){
+                obj[key] = this.rename;
+              }
+              else{
+                delete Object.assign(obj, {[newKey]: obj[this.beforeName] })[this.beforeName];
+              }
             }
-          }
+            if(this.action === 'remove'){
+              delete Object.assign(obj)[this.beforeName];
+            }
+            break;
+          };
+
+          if(newObj) changeObj(newObj);
         }
       }
-      else{
-        const changeObj = (obg) =>{
-          for(let key in obg){
-            if(!this.isFile && obg[key]['#_id'] === this.renameID) {
-              if (this.action === 'rename') {
-                delete Object.assign(obg[key], {[this.rename]: obg[key][this.beforeName]})[this.beforeName];
-              };
-              if (this.action === 'remove') {
-                delete Object.assign(obg[key])[this.beforeName];
-              };
-              break;
-            }
-            if(this.isFile && obg['#_id'] === this.renameID && obg[key]=== this.beforeName){
-              if(this.action === 'rename'){
-                obg[key] = this.rename;
-              };
-              if(this.action === 'remove'){
-                delete Object.assign(obg)[key];
-              };
-              break;
-            }
-            if(typeof obg[key] === 'object') {
-              changeObj(obg[key]);
-            };
-          }
-        }
 
-        changeObj(newObject);
-      };
+      changeObj(newTreeObject);
 
       const objectWrapper = {
-        0: newObject
+        0: newTreeObject
       };
 
       this.setTree(objectWrapper);
@@ -101,8 +75,7 @@ export default {
       this.rename = '';
     },
 
-    actionFN(id, name, action, file = false){
-      this.renameID = id;
+    actionsController(name, action, file = false){
       this.beforeName = name;
       this.action = action;
       this.isFile = file;
@@ -113,24 +86,35 @@ export default {
           this.$refs.input.focus();
         })
       }
-      if(action === 'remove') this.changeObject();
+
+      if(action === 'remove') this.changeTree();
     },
 
-    setId(el){
+    generationKey(key){
+      return  key + '#_hash:' + Math.random();
+    },
+
+    setHash(el){
       const arr = JSON.parse(JSON.stringify(el));
       const tree = arr[0];
-      if(!tree['#_id']) tree['#_id'] = Math.random();
 
-      function enumerationOfTheObject(object){
-        for(let el in object){
-          if(typeof object[el] === 'object'){
-            if(!object[el]['#_id'])object[el]['#_id'] = Math.random();
-            enumerationOfTheObject(object[el])
+       const enumerationOfTheObject = (object) =>{
+        for(let key in object){
+          let nextObject = object[key];
+
+          if(key.indexOf('#_hash:') < 0){
+            const newKey = this.generationKey(key)
+            delete Object.assign( object, {[newKey]: object[key] })[key];
+            nextObject = object[newKey];
+          }
+
+          if(typeof nextObject === 'object'){
+            enumerationOfTheObject(nextObject)
           }
         }
       };
       enumerationOfTheObject(tree);
-      this.obg = tree;
+      this.treeObject = tree;
     },
   },
 
@@ -141,7 +125,7 @@ export default {
   watch:{
     getTree:{
       handler(el){
-        this.setId(el);
+        this.setHash(el);
       },
       deep: true,
     }
@@ -149,12 +133,13 @@ export default {
 
   async mounted() {
     await this.requestTree();
-    this.setId(this.getTree);
+    this.setHash(this.getTree);
   }
 }
 </script>
 
 <style scoped lang="scss">
+
 .tree{
   position: relative;
   padding: 15px;

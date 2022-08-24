@@ -2,25 +2,25 @@
   li.item-tree
     template(v-if="typeof item === 'object'")
       .item-tree__btn-list
-        button.item-tree__btn-list__control(:class="{'open': tree}" @click="openCloseTree") {{name ? name : 'tree'}}
+        button.item-tree__btn-list__control(:class="{'open': branch}" @click="openCloseBranch") {{name ? removeHash(name) : 'tree'}}
         div
-          button.item-tree__btn-list__rename( @click="action(id, name, 'rename')" aria-label="rename")
-          button.item-tree__btn-list__remove( @click="action(id, name, 'remove')" aria-label="remove")
+          button.item-tree__btn-list__rename( @click="action(name, 'rename')" aria-label="rename")
+          button.item-tree__btn-list__remove( @click="action(name, 'remove')" aria-label="remove")
       transition(name="list" )
-        ul.item-tree__item-list(v-show="tree" )
-          template(v-if="typeof el === 'object' && name !== '#_id'" v-for="(el, name, index) in item" )
-            TreeItem( :item="el" :name="name" :id="item['#_id']" :key="name" :action="action")
-          li.item-tree(v-else-if="name !== '#_id'")
+        ul.item-tree__item-list(v-show="branch" )
+          template(v-if="typeof el === 'object'" v-for="(el, name, index) in item" )
+            TreeItem(:item="el" :name="name" :key="name" :action="action")
+          li.item-tree(v-else)
             .item-tree__item-list__file
               span {{el}}
               div
-                button.item-tree__btn-list__rename( @click="action(item['#_id'], el, 'rename', true)" aria-label="rename")
-                button.item-tree__btn-list__remove( @click="action(item['#_id'], el, 'remove', true)" aria-label="remove")
+                button.item-tree__btn-list__rename( @click="action(name, 'rename', true)" aria-label="rename")
+                button.item-tree__btn-list__remove( @click="action(name, 'remove', true)" aria-label="remove")
     .item-tree__item-list__file(v-else)
       span {{item}}
       div
-        button.item-tree__btn-list__rename( @click="action(id, item, 'rename', true)" aria-label="rename")
-        button.item-tree__btn-list__remove( @click="action(id, item, 'remove', true)" aria-label="remove")
+        button.item-tree__btn-list__rename( @click="action(name, 'rename', true)" aria-label="rename")
+        button.item-tree__btn-list__remove( @click="action(name, 'remove', true)" aria-label="remove")
 
 
 </template>
@@ -31,12 +31,15 @@ export default {
   props: ['item', 'name', 'id', 'action'],
   data:()=>{
     return{
-      tree: false,
+      branch: false,
     }
   },
   methods:{
-    openCloseTree(){
-      this.tree = !this.tree;
+    openCloseBranch(){
+      this.branch = !this.branch;
+    },
+    removeHash(name){
+      return name.substring(0, name.indexOf('#_hash:'))
     }
   }
 }
@@ -111,7 +114,6 @@ export default {
       background: url("/tree/delete.png") center center/contain no-repeat;
     }
   }
-
 
   &__item-list{
     overflow: hidden;

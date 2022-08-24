@@ -2,11 +2,11 @@
   .tree
     ul
       template(v-for="(item, name, i) in treeObject")
-        TreeItem(v-if="name !== '#_id'" :item="item" :name="name" :key="name" :id="treeObject['#_id']" :action="actionsController")
+        TreeItem(:item="item" :name="name" :key="name" :action="actionsController")
     transition(name="form" )
       form.tree__form(@submit="changeTree" v-if="showRenameForm")
         button(type="button" aria-label="close rename" @click="()=>{this.showRenameForm = false}")
-        input(ref="input" placeholder="Rename" v-model="rename" )
+        input(ref="input" placeholder="Rename" v-model="rename")
 </template>
 
 <script>
@@ -40,31 +40,31 @@ export default {
       const newTreeObject = {};
       Object.assign(newTreeObject, this.treeObject);
 
-      const changeObj = (obj) => {
-        for(let key in obj){
-          const newObj = typeof obj[key] === 'object' ? obj[key] : null;
+      const changeTreeElements = (element) => {
+        for(let key in element){
+          const newTreeElements = typeof element[key] === 'object' ? element[key] : null;
 
           if(key === this.beforeName){
             const newKey = this.generationKey(this.rename);
             if(this.action === 'rename'){
               if(this.isFile){
-                obj[key] = this.rename;
+                element[key] = this.rename;
               }
               else{
-                delete Object.assign(obj, {[newKey]: obj[this.beforeName] })[this.beforeName];
+                delete Object.assign(element, {[newKey]: element[this.beforeName] })[this.beforeName];
               }
             }
             if(this.action === 'remove'){
-              delete Object.assign(obj)[this.beforeName];
+              delete Object.assign(element)[this.beforeName];
             }
             break;
           };
 
-          if(newObj) changeObj(newObj);
+          if(newTreeElements) changeTreeElements(newTreeElements);
         }
       }
 
-      changeObj(newTreeObject);
+      changeTreeElements(newTreeObject);
 
       const objectWrapper = {
         0: newTreeObject

@@ -28,7 +28,7 @@
 <script>
 export default {
   name: 'TreeItem',
-  props: ['item', 'name', 'id', 'action'],
+  props: ['item', 'name', 'action'],
   data:()=>{
     return{
       branch: false,
